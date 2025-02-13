@@ -3,3 +3,4 @@ numpy
 matplotlib
 landsatxplore
 sentinelsat
+python-dotenv
