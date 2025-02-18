@@ -4,3 +4,4 @@ matplotlib
 landsatxplore
 sentinelsat
 python-dotenv
+rasterio
