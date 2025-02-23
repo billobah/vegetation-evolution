@@ -5,3 +5,5 @@ landsatxplore
 sentinelsat
 python-dotenv
 rasterio
+opencv-python
+opencv-python-headless
