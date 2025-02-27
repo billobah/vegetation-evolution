@@ -4,9 +4,8 @@ zz_archives
 # NDVI folder
 ndvi/
 
-# ===========================
+
 # Python
-# ===========================
 __pycache__/
 *.py[cod]
 *.so
@@ -37,30 +36,10 @@ venv/
 logs/
 nohup.out
 
-# ===========================
-# Données (Data Lake)
-# ===========================
+# Données
 data/
-data/raw/
-data/processed/
-data/interim/
-data/external/
-data/tmp/
-data/backups/
-*.csv
-*.parquet
-*.json
-*.geojson
-*.h5
-*.feather
-*.pkl
-*.zip
-*.tar.gz
-*.bak
 
-# ===========================
 # DBT (Data Build Tool)
-# ===========================
 dbt_modules/
 logs/
 target/
@@ -71,9 +50,7 @@ dbt_packages/
 dbt_project.yml.lock
 dbt_packages.yml
 
-# ===========================
 # Docker
-# ===========================
 .dockerignore
 docker-compose.override.yml
 docker-compose.yml.lock
@@ -82,17 +59,13 @@ Dockerfile
 docker/
 *.dockerfile
 
-# ===========================
 # Google Cloud Platform (GCP)
-# ===========================
 gcloud/
 *.key.json
 *.bqhistory
 .cloudignore
 
-# ===========================
 # Apache Airflow
-# ===========================
 airflow/
 airflow.db
 airflow.cfg
@@ -103,25 +76,15 @@ logs/
 .airflow-local/
 .airflow/
 
-# ===========================
 # Tests et CI/CD
-# ===========================
-.coverage
-.tox/
-nosetests.xml
 pytest_cache/
-junit.xml
-htmlcov/
-coverage.xml
 .cache/
 .vscode/
 .github/
 .github/workflows/
 .idea/
 
-# ===========================
 # Terraform (Infrastructure as Code)
-# ===========================
 .terraform/
 terraform.tfstate
 terraform.tfstate.backup
@@ -130,58 +93,11 @@ terraform.tfstate.backup
 *.tfbackend
 terraform.lock.hcl
 
-# ===========================
+
 # Outils de BI (Power BI, Tableau, Looker)
-# ===========================
 *.pbix  # Power BI
 *.twb   # Tableau Workbook
 *.twbx  # Tableau Packaged Workbook
 .looker/
 *.dashboard.json
 *.dashboard.yml
-
-# ===========================
-# Node.js / Frontend (si utilisé)
-# ===========================
-node_modules/
-package-lock.json
-yarn.lock
-npm-debug.log
-.yarn/
-.pnpm-debug.log
-.next/
-dist/
-build/
-
-# ===========================
-# Documentation
-# ===========================
-*.docx
-*.pdf
-*.xls
-*.xlsx
-*.pptx
-*.md~
-
-# ===========================
-# Systèmes & Temp Files
-# ===========================
-.DS_Store
-Thumbs.db
-desktop.ini
-~$*
-*.tmp
-*.swp
-*.swo
-*.bak
-*.old
-*.rej
-
-# ===========================
-# IDE Configurations
-# ===========================
-.vscode/
-.idea/
-*.sublime-workspace
-*.sublime-project
-*.code-workspace
