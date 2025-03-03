@@ -70,81 +70,81 @@ results = send_request(SEARCH_URL, search_payload)
 if not results or "data" not in results or "results" not in results["data"]:
     print("Aucune donnée trouvée ou erreur API.")
     sys.exit()
-#
-# scenes = results["data"]["results"]
-#
-# # Vérification que scenes est bien une liste
-# if not isinstance(scenes, list):
-#     print(f"Erreur : `scenes` devrait être une liste mais a le type {type(scenes)}.")
-#     print("Contenu de scenes :", json.dumps(scenes, indent=2))  # Debugging
-#     sys.exit()
-#
-# print(f"{len(scenes)} scènes trouvées.")
-#
-# # Création du dossier pour les téléchargements
-# output_dir = '../data/raw/landsat'
-# os.makedirs(output_dir, exist_ok=True)
-#
-# # Fonction pour extraire uniquement les bandes B3 et B4
-# def extract_b3_b4(tar_path, dest_dir):
-#     """Extrait les bandes B3 (Rouge) et B4 (NIR) d'une archive TAR."""
-#     with tarfile.open(tar_path, 'r') as tar:
-#         members = tar.getmembers()
-#         b3_b4_members = [m for m in members if m.name.endswith('_B3.TIF') or m.name.endswith('_B4.TIF')]
-#
-#         if b3_b4_members:
-#             tar.extractall(path=dest_dir, members=b3_b4_members)
-#             print(f"Bandes B3 et B4 extraites dans : {dest_dir}")
-#         else:
-#             print(f"Aucune bande B3 ou B4 trouvée dans : {tar_path}")
-#
-# # Téléchargement des images
-# for scene in scenes:
-#     if not isinstance(scene, dict):
-#         print(f"Erreur : `scene` n'est pas un dictionnaire mais {type(scene)}")
-#         continue
-#
-#     entity_id = scene.get('entityId')
-#     display_id = scene.get('displayId')  # Contient la date sous format YYYYMMDD
-#
-#     # Extraction de la date depuis displayId (ex: "LE07_L2SP_119052_20240119_20240215_02_T2")
-#     acquisition_date = None
-#     if display_id and len(display_id) > 20:
-#         acquisition_date = display_id.split("_")[3]  # Extrait la partie YYYYMMDD
-#         acquisition_date = f"{acquisition_date[:4]}-{acquisition_date[4:6]}-{acquisition_date[6:]}"  # Convertir en YYYY-MM-DD
-#
-#     if not acquisition_date or not entity_id:
-#         print("❌ Données de scène manquantes, passage à la suivante.")
-#         continue
-#
-#     print(f"\n✅ Téléchargement de la scène : {entity_id} pour la date : {acquisition_date}")
-#
-#     # Création d'un dossier par date
-#     date_dir = os.path.join(output_dir, acquisition_date)
-#     os.makedirs(date_dir, exist_ok=True)
-#
-#     # Demande de téléchargement
-#     download_payload = {
-#         "downloads": [{"entityId": entity_id, "productId": entity_id, "datasetName": "landsat_etm_c2_l2"}]
-#     }
-#     download_results = send_request(DOWNLOAD_URL, download_payload)
-#
-#     if not download_results or "data" not in download_results:
-#         print(f"Erreur lors de la demande de téléchargement pour la scène {entity_id}.")
-#         continue
-#
-#     download_url = download_results["data"][0]["url"]
-#
-#     # Téléchargement du fichier
-#     tar_path = os.path.join(date_dir, f"{entity_id}.tar")
-#     response = requests.get(download_url, stream=True)
-#     with open(tar_path, "wb") as file:
-#         for chunk in response.iter_content(chunk_size=8192):
-#             file.write(chunk)
-#
-#     print(f"Téléchargement terminé : {tar_path}")
-#
-#     # Extraction des bandes B3 et B4
-#     extract_b3_b4(tar_path, date_dir)
-#
-# print("\nTéléchargements terminés et images organisées par date.")
+
+scenes = results["data"]["results"]
+
+# Vérification que scenes est bien une liste
+if not isinstance(scenes, list):
+    print(f"Erreur : `scenes` devrait être une liste mais a le type {type(scenes)}.")
+    print("Contenu de scenes :", json.dumps(scenes, indent=2))  # Debugging
+    sys.exit()
+
+print(f"{len(scenes)} scènes trouvées.")
+
+# Création du dossier pour les téléchargements
+output_dir = '../data/raw/landsat'
+os.makedirs(output_dir, exist_ok=True)
+
+# Fonction pour extraire uniquement les bandes B3 et B4
+def extract_b3_b4(tar_path, dest_dir):
+    """Extrait les bandes B3 (Rouge) et B4 (NIR) d'une archive TAR."""
+    with tarfile.open(tar_path, 'r') as tar:
+        members = tar.getmembers()
+        b3_b4_members = [m for m in members if m.name.endswith('_B3.TIF') or m.name.endswith('_B4.TIF')]
+
+        if b3_b4_members:
+            tar.extractall(path=dest_dir, members=b3_b4_members)
+            print(f"Bandes B3 et B4 extraites dans : {dest_dir}")
+        else:
+            print(f"Aucune bande B3 ou B4 trouvée dans : {tar_path}")
+
+# Téléchargement des images
+for scene in scenes:
+    if not isinstance(scene, dict):
+        print(f"Erreur : `scene` n'est pas un dictionnaire mais {type(scene)}")
+        continue
+
+    entity_id = scene.get('entityId')
+    display_id = scene.get('displayId')  # Contient la date sous format YYYYMMDD
+
+    # Extraction de la date depuis displayId (ex: "LE07_L2SP_119052_20240119_20240215_02_T2")
+    acquisition_date = None
+    if display_id and len(display_id) > 20:
+        acquisition_date = display_id.split("_")[3]  # Extrait la partie YYYYMMDD
+        acquisition_date = f"{acquisition_date[:4]}-{acquisition_date[4:6]}-{acquisition_date[6:]}"  # Convertir en YYYY-MM-DD
+
+    if not acquisition_date or not entity_id:
+        print("❌ Données de scène manquantes, passage à la suivante.")
+        continue
+
+    print(f"\n✅ Téléchargement de la scène : {entity_id} pour la date : {acquisition_date}")
+
+    # Création d'un dossier par date
+    date_dir = os.path.join(output_dir, acquisition_date)
+    os.makedirs(date_dir, exist_ok=True)
+
+    # Demande de téléchargement
+    download_payload = {
+        "downloads": [{"entityId": entity_id, "productId": entity_id, "datasetName": "landsat_etm_c2_l2"}]
+    }
+    download_results = send_request(DOWNLOAD_URL, download_payload)
+
+    if not download_results or "data" not in download_results:
+        print(f"Erreur lors de la demande de téléchargement pour la scène {entity_id}.")
+        continue
+
+    download_url = download_results["data"][0]["url"]
+
+    # Téléchargement du fichier
+    tar_path = os.path.join(date_dir, f"{entity_id}.tar")
+    response = requests.get(download_url, stream=True)
+    with open(tar_path, "wb") as file:
+        for chunk in response.iter_content(chunk_size=8192):
+            file.write(chunk)
+
+    print(f"Téléchargement terminé : {tar_path}")
+
+    # Extraction des bandes B3 et B4
+    extract_b3_b4(tar_path, date_dir)
+
+print("\nTéléchargements terminés et images organisées par date.")
