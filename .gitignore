@@ -4,7 +4,6 @@ zz_archives
 # NDVI folder
 ndvi/
 
-
 # Python
 __pycache__/
 *.py[cod]
