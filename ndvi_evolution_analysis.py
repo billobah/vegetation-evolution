@@ -6,11 +6,9 @@ import rasterio
 from glob import glob
 import pandas as pd
 
-
 # Directory Configuration
-ndvi_output_dir = 'ndvi/ndvi_cropped_straightened_images'
+ndvi_output_dir = 'ndvi/ndvi_results_cropped_straightened_images'
 os.makedirs(ndvi_output_dir, exist_ok=True)
-
 
 # NDVI Classes
 ndvi_labels = [
@@ -22,7 +20,6 @@ ndvi_labels = [
     "Végétation Dense", 
     "Forêt Tropicale"
 ]
-
 
 # Load NDVI Images
 def load_ndvi_images():
@@ -40,7 +37,6 @@ def load_ndvi_images():
     print("Images NDVI chargées avec succès.")
     return ndvi_series
 
-
 # NDVI Classification
 def classify_ndvi(ndvi):
     classes = np.zeros_like(ndvi)
@@ -52,7 +48,6 @@ def classify_ndvi(ndvi):
     classes = np.where((ndvi > 0.6) & (ndvi <= 0.8), 6, classes)
     classes = np.where((ndvi > 0.8), 7, classes)
     return classes.astype(int)
-
 
 # Temporal Series by 30m Pixel
 def temporal_series_by_pixel(ndvi_series):
@@ -89,7 +84,6 @@ def temporal_series_by_pixel(ndvi_series):
     plt.close()
 
     print("Séries temporelles par pixel sauvegardées avec succès.")
-
 
 # Temporal Series by Vegetation Type
 def temporal_series_by_vegetation(ndvi_series):
@@ -130,7 +124,6 @@ def temporal_series_by_vegetation(ndvi_series):
     plt.close()
 
     print("Séries temporelles par type de végétation sauvegardées avec succès.")
-
 
 # Main Function
 if __name__ == "__main__":
