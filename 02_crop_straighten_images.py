@@ -7,7 +7,7 @@ import numpy as np
 
 # Define input and output directories
 input_dir = 'data/raw/landsat'
-cropped_dir = 'data/raw/cropped_straightened'
+cropped_dir = 'data/cropped_straightened'
 os.makedirs(cropped_dir, exist_ok=True)
 
 # Loading images
@@ -102,4 +102,4 @@ def process_images():
 # Main Function
 if __name__ == "__main__":
     process_images()
-    print("Découpage et redressement des images terminé.")
+    print("Découpage et redressement des images terminés.")
