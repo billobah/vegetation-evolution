@@ -5,12 +5,10 @@ import matplotlib.pyplot as plt
 import rasterio
 from glob import glob
 
-
 # Folders Configuration
 cropped_dir = 'data/cropped_straightened'
 ndvi_output_dir = 'ndvi/ndvi_results_cropped_straightened_images'
 os.makedirs(ndvi_output_dir, exist_ok=True)
-
 
 # Crop to Same Size
 def crop_to_same_size(image1, image2):
@@ -21,7 +19,6 @@ def crop_to_same_size(image1, image2):
     image2_cropped = image2[:min_rows, :min_cols]
     
     return image1_cropped, image2_cropped
-
 
 # NDVI Calculation
 def calculate_ndvi(red, nir):
@@ -41,34 +38,28 @@ def calculate_and_save_ndvi(red, nir, date_str):
     print(f"NDVI Image saved: {save_path}")
     return ndvi
 
-
 # Load Images
 def load_band(image_path):
     with rasterio.open(image_path) as src:
         image = src.read(1).astype('float32')
     return image
 
-
-# Process Images
+# Read and Process Images
 def process_images():
     ndvi_series = {}
     
-    # Loop through date directories in cropped_straightened
-    for date_dir in sorted(glob(os.path.join(cropped_dir, '*'))):
-        date_str = os.path.basename(date_dir)
+    # Find all B3 (Red) and B4 (NIR) files in cropped_straightened
+    b3_files = sorted(glob(os.path.join(cropped_dir, '*_B3_Rouge_cropped_straightened.TIF')))
+    b4_files = sorted(glob(os.path.join(cropped_dir, '*_B4_NIR_cropped_straightened.TIF')))
+    
+    if not b3_files or not b4_files:
+        print("No B3 or B4 images found in the directory.")
+        return ndvi_series
+    
+    for b3_path, b4_path in zip(b3_files, b4_files):
+        date_str = os.path.basename(b3_path).split('_')[0]  # Extract date from filename
         print(f"\nProcessing images for date: {date_str}")
         
-        # Find B3 (Red) and B4 (NIR) files
-        b3_files = glob(os.path.join(date_dir, '*_B3_Rouge_cropped_straightened.TIF'))
-        b4_files = glob(os.path.join(date_dir, '*_B4_NIR_cropped_straightened.TIF'))
-        
-        if not b3_files or not b4_files:
-            print(f"No B3 or B4 images found for date: {date_str}")
-            continue
-        
-        # Load B3 (Red) and B4 (NIR) images
-        b3_path = b3_files[0]
-        b4_path = b4_files[0]
         red = load_band(b3_path)
         nir = load_band(b4_path)
         
@@ -80,7 +71,6 @@ def process_images():
         ndvi_series[date_str] = ndvi
         
     return ndvi_series
-
 
 # Main Function
 if __name__ == "__main__":
