@@ -1,8 +1,9 @@
 # Archives folder
 zz_archives
 
-# NDVI folder
+# folders
 ndvi/
+ingest/
 
 # Python
 __pycache__/
