@@ -4,6 +4,7 @@ zz_archives
 # folders
 ndvi/
 ingest/
+geojson/
 
 # Python
 __pycache__/
