@@ -73,7 +73,7 @@ Le script `ndvi/compute_ndvi.py` calcule le **NDVI** à partir des bandes spectr
 
 NDVI = (B4 - B3)/(B4 + B3)
 
-``h
+```bash
 python ndvi/compute_ndvi.py
 ```
 
