@@ -71,10 +71,9 @@ Ce script :
 
 Le script `ndvi/compute_ndvi.py` calcule le **NDVI** à partir des bandes spectrales extraites, selon la formule :
 
-\[NDVI = \frac{B4 - B3}{B4 + B3}
-\]
+NDVI = (B4 - B3)/(B4 + B3)
 
-```bash
+``h
 python ndvi/compute_ndvi.py
 ```
 
