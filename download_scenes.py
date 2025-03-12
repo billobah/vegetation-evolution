@@ -5,7 +5,6 @@ logging.basicConfig(level=logging.INFO,format='%(asctime)s - %(levelname)s - %(m
 
 params = {
     "datasetName": "landsat_tm_c2_l1",
-    "collectionName": "LT05_L1TP_016037_20010723_20161128_01_T1",
     "spatialFilter": {
         "filterType": "mbr",
         "lowerLeft": {"latitude": 8.5, "longitude": -9.5},
@@ -15,7 +14,7 @@ params = {
         "startDate": "2001-01-01",
         "endDate": "2001-12-31"
     },
-    "maxResults": 3,
+    "maxResults": 1,
     "cloudCoverFilter": {"max": 10, "min": 0},
 }
 
