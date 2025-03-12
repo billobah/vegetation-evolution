@@ -1,8 +1,10 @@
 # Archives folder
 zz_archives
 
-# NDVI folder
+# folders
 ndvi/
+ingest/
+geojson/
 
 # Python
 __pycache__/
