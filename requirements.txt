@@ -8,3 +8,4 @@ rasterio==1.4.3
 opencv-python==4.11.0.86
 opencv-python-headless==4.11.0.86
 seaborn==0.13.2
+requests==2.32.3
