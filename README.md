@@ -20,13 +20,14 @@ L'objectif est de :
 
 ## Installation et Prérequis
 
-### 1️⃣ Cloner le dépôt
+### 1. Cloner le dépôt
 
 
-### 2️⃣ Créer un environnement virtuel (optionnel)
+### 2. Créer un environnement virtuel (optionnel)
 
 
-### 3️⃣ Installer les dépendances
+### 3. Installer les dépendances
+
 ```bash
 pip install -r requirements.txt
 ```
@@ -37,7 +38,7 @@ pip install -r requirements.txt
 
 Ce projet utilise la bibliothèque **m2m-api** (disponible sur [GitHub](https://github.com/Fergui/m2m-api)) pour interagir avec l'API Machine-to-Machine (M2M) de l'USGS et télécharger des images Landsat.
 
-⚠ **Avant de lancer ce script, assure-toi d'avoir un compte USGS et d'avoir demandé l'accès M2M (Machine-to-Machine) sur [ERS USGS](https://ers.cr.usgs.gov/profile/access).**  
+**Avant de lancer ce script, assure-toi d'avoir un compte USGS et d'avoir demandé l'accès M2M (Machine-to-Machine) sur [ERS USGS](https://ers.cr.usgs.gov/profile/access).**  
 
 Une fois l'accès validé, renseigne tes identifiants ou ton token dans le fichier `config.json`.
 
