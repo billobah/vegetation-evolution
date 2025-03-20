@@ -6,8 +6,8 @@ import rasterio
 from glob import glob
 
 # Folders Configuration
-cropped_dir = 'data/cropped_straightened'
-ndvi_output_dir = 'ndvi/ndvi_results_cropped_straightened_images'
+cropped_dir = '../data/cropped_straightened'
+ndvi_output_dir = '../results/ndvi_results_cropped_straightened_images'
 os.makedirs(ndvi_output_dir, exist_ok=True)
 
 # Crop to Same Size
