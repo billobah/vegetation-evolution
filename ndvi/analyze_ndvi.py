@@ -7,7 +7,8 @@ from glob import glob
 import pandas as pd
 
 # Directory Configuration
-ndvi_output_dir = 'ndvi/ndvi_results_cropped_straightened_images'
+ndvi_input_dir = '../results/ndvi_results_cropped_straightened_images'
+ndvi_output_dir = '../results/ndvi_results_graphs_stats'
 os.makedirs(ndvi_output_dir, exist_ok=True)
 
 # NDVI Classes
@@ -26,7 +27,7 @@ def load_ndvi_images():
     ndvi_series = {}
     
     # Boucle à travers les images NDVI par date
-    for file in sorted(glob(os.path.join(ndvi_output_dir, '*_ndvi.png'))):
+    for file in sorted(glob(os.path.join(ndvi_input_dir, '*_ndvi.png'))):
         date_str = os.path.basename(file).split('_ndvi.png')[0]
         
         # Chargement de l'image NDVI
