@@ -6,8 +6,8 @@ from glob import glob
 import numpy as np
 
 # Define input and output directories
-input_dir = 'data/raw/landsat'
-cropped_dir = 'data/cropped_straightened'
+input_dir = '../data/raw/landsat'
+cropped_dir = '../data/cropped_straightened'
 os.makedirs(cropped_dir, exist_ok=True)
 
 # Loading images
