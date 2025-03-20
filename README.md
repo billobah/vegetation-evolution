@@ -55,10 +55,10 @@ Ce script :
 
 ## Étape 2 : Prétraitement des Images
 
-Le script `image_utils/preprocess_images.py` réalise le **redressement géométrique** des images pour garantir leur alignement.
+Le script `image_utils/crop_straighten_images.py` réalise le **redressement géométrique** des images pour garantir leur alignement.
 
 ```bash
-python image_utils/preprocess_images.py
+python image_utils/crop_straighten_images.py
 ```
 
 Ce script :
@@ -87,7 +87,7 @@ Ce script :
 
 ## Étape 4 : Analyse Temporelle du NDVI
 
-Le script `ndvi/analyze_ndvi.py` permet d'étudier l'évolution du NDVI au fil du temps afin d'observer les tendances de la végétation.
+Le script `ndvi/analyze_ndvi.py` permet d'analyser l'évolution du NDVI au fil du temps afin d'observer les tendances de la végétation.
 
 ```bash
 python ndvi/analyze_ndvi.py
@@ -102,10 +102,10 @@ Ce script :
 
 ## Résultats et Visualisation
 
-Les résultats seront stockés dans le dossier `results/`, sous forme de :
+Les résultats sont stockés dans le dossier `results/`, sous forme de :
 - **Cartes NDVI géoréférencées** (format PNG).
 - **Graphiques temporels** illustrant l'évolution du NDVI.
-- **Rapports statistiques** sur les tendances observées.
+- **Visuels statistiques** sur les tendances observées.
 
 ---
 
