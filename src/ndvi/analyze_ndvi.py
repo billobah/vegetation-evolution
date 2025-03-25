@@ -7,8 +7,8 @@ from glob import glob
 import pandas as pd
 
 # Directory Configuration
-ndvi_input_dir = '../results/ndvi_results_cropped_straightened_images'
-ndvi_output_dir = '../results/ndvi_results_graphs_stats'
+ndvi_input_dir = '../../results/ndvi_results_cropped_straightened_images'
+ndvi_output_dir = '../../results/ndvi_results_graphs_stats'
 os.makedirs(ndvi_output_dir, exist_ok=True)
 
 # NDVI Classes
@@ -127,8 +127,9 @@ def temporal_series_by_vegetation(ndvi_series):
     print("Séries temporelles par type de végétation sauvegardées avec succès.")
 
 # Main Function
-if __name__ == "__main__":
+def main():
+    print("Début analyse NDVI")
     ndvi_series = load_ndvi_images()
     temporal_series_by_pixel(ndvi_series)
     temporal_series_by_vegetation(ndvi_series)
-    print("Analyse complète terminée.")
+    print("Analyse NDVI terminée.")

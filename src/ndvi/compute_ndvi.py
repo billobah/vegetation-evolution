@@ -6,8 +6,8 @@ import rasterio
 from glob import glob
 
 # Folders Configuration
-cropped_dir = '../data/cropped_straightened'
-ndvi_output_dir = '../results/ndvi_results_cropped_straightened_images'
+cropped_dir = '../../data/cropped_straightened'
+ndvi_output_dir = '../../results/ndvi_results_cropped_straightened_images'
 os.makedirs(ndvi_output_dir, exist_ok=True)
 
 # Crop to Same Size
@@ -73,6 +73,7 @@ def process_images():
     return ndvi_series
 
 # Main Function
-if __name__ == "__main__":
+
+def main():
     ndvi_series = process_images()
-    print("\nNDVI calculation completed.")
+    print("\nCalcul du NDVI terminé.")

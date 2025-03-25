@@ -58,7 +58,7 @@ Ce script :
 Le script `image_utils/crop_straighten_images.py` réalise le **redressement géométrique** des images pour garantir leur alignement.
 
 ```bash
-python image_utils/crop_straighten_images.py
+python utils/crop_straighten_images.py
 ```
 
 Ce script :
