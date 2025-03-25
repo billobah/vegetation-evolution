@@ -1,48 +1,25 @@
-# Archives folder
-zz_archives
-
-# folders
-results/
-ingest/
-geojson/
-
-# Python
-__pycache__/
-*.py[cod]
-*.so
-*.egg-info/
-*.log
-*.sqlite3
-*.db
-*.pyo
-*.pyd
-
 # Environnements virtuels
 venv/
 .env/
-.envrc/
-.env.local
-.env.test
-*.venv
-.env.*
-.env
+
+# folders
+data/
+results/
+notebooks/
+
+# Python
+__pycache__/
 
 # Jupyter Notebook checkpoints
 .ipynb_checkpoints/
 
 # Fichiers de logs
 *.log
-*.out
-*.err
 logs/
-nohup.out
 
-# Données
-data/
 
 # DBT (Data Build Tool)
 dbt_modules/
-logs/
 target/
 manifest.json
 run_results.json
@@ -71,7 +48,6 @@ airflow/
 airflow.db
 airflow.cfg
 dags/__pycache__/
-logs/
 *.airflowignore
 .airflowenv
 .airflow-local/
