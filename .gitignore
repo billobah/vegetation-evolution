@@ -1,6 +1,8 @@
 # Environnements virtuels
 venv/
+.venv/
 .env/
+
 
 # folders
 data/
