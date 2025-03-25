@@ -5,7 +5,7 @@ venv/
 # folders
 data/
 results/
-notebooks/*.ipynb
+notebooks/
 
 # Python
 __pycache__/
