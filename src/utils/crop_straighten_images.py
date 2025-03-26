@@ -6,8 +6,8 @@ from glob import glob
 import numpy as np
 
 # Define input and output directories
-input_dir = '../data/raw/landsat'
-cropped_dir = '../data/cropped_straightened'
+input_dir = '../../data/raw/landsat'
+cropped_dir = '../../data/cropped_straightened'
 os.makedirs(cropped_dir, exist_ok=True)
 
 # Loading images
@@ -100,6 +100,10 @@ def process_images():
         detect_and_straighten(nir, nir_meta, date_str, 'B4_NIR')
 
 # Main Function
-if __name__ == "__main__":
+def main():
+    print("Début découpage et redressement des images.")
     process_images()
     print("Découpage et redressement des images terminés.")
+
+    # Retour du dossier contenant les images redressées
+    return cropped_dir

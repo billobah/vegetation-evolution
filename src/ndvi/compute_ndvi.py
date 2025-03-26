@@ -6,8 +6,8 @@ import rasterio
 from glob import glob
 
 # Folders Configuration
-cropped_dir = '../data/cropped_straightened'
-ndvi_output_dir = '../results/ndvi_results_cropped_straightened_images'
+cropped_dir = '../../data/cropped_straightened'
+ndvi_output_dir = '../../results/ndvi_results_cropped_straightened_images'
 os.makedirs(ndvi_output_dir, exist_ok=True)
 
 # Crop to Same Size
@@ -45,34 +45,31 @@ def load_band(image_path):
     return image
 
 # Read and Process Images
-def process_images():
+def process_images(cropped_dir):
     ndvi_series = {}
-    
-    # Find all B3 (Red) and B4 (NIR) files in cropped_straightened
+
     b3_files = sorted(glob(os.path.join(cropped_dir, '*_B3_Rouge_cropped_straightened.TIF')))
     b4_files = sorted(glob(os.path.join(cropped_dir, '*_B4_NIR_cropped_straightened.TIF')))
-    
+
     if not b3_files or not b4_files:
         print("No B3 or B4 images found in the directory.")
         return ndvi_series
-    
+
     for b3_path, b4_path in zip(b3_files, b4_files):
-        date_str = os.path.basename(b3_path).split('_')[0]  # Extract date from filename
+        date_str = os.path.basename(b3_path).split('_')[0]
         print(f"\nProcessing images for date: {date_str}")
-        
+
         red = load_band(b3_path)
         nir = load_band(b4_path)
-        
-        # Crop to the same size
+
         red_cropped, nir_cropped = crop_to_same_size(red, nir)
-        
-        # Calculate and save NDVI
         ndvi = calculate_and_save_ndvi(red_cropped, nir_cropped, date_str)
         ndvi_series[date_str] = ndvi
-        
+
     return ndvi_series
 
-# Main Function
-if __name__ == "__main__":
-    ndvi_series = process_images()
-    print("\nNDVI calculation completed.")
+
+def main(cropped_dir):
+    ndvi_series = process_images(cropped_dir)
+    print("\nCalcul du NDVI terminé.")
+    return ndvi_series

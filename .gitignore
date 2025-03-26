@@ -1,3 +1,6 @@
+# Config files
+*.json
+
 # Environnements virtuels
 venv/
 .venv/
