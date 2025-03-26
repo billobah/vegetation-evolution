@@ -27,3 +27,7 @@ def main():
     downloadMeta = m2m.retrieveScenes(params["datasetName"], scenes)
     print("Vérification du format des fichiers téléchargés")
     logging.info(f"Fichiers téléchargés : {downloadMeta}")
+
+    # Return du chemin de téléchargement
+    download_dir = "../../data/raw/landsat"
+    return download_dir

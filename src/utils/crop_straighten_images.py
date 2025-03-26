@@ -104,3 +104,6 @@ def main():
     print("Début découpage et redressement des images.")
     process_images()
     print("Découpage et redressement des images terminés.")
+
+    # Retour du dossier contenant les images redressées
+    return cropped_dir

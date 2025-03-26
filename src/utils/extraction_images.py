@@ -62,7 +62,7 @@ def extract_bands_from_tar(tar_path, download_dir):
     except Exception as e:
         logging.error(f"Erreur lors du traitement de {filename} : {e}")
 
-def main():
+def main(download_dir):
     print("Début examen dossier et traitement des archives TAR")
     for file in os.listdir(download_dir):
         tar_path = os.path.join(download_dir, file)

@@ -13,30 +13,29 @@ os.makedirs(ndvi_output_dir, exist_ok=True)
 
 # NDVI Classes
 ndvi_labels = [
-    "Eau", 
-    "Sols Nus/Urbain", 
-    "Végétation Très Faible", 
-    "Végétation Faible", 
-    "Végétation Modérée", 
-    "Végétation Dense", 
+    "Eau",
+    "Sols Nus/Urbain",
+    "Végétation Très Faible",
+    "Végétation Faible",
+    "Végétation Modérée",
+    "Végétation Dense",
     "Forêt Tropicale"
 ]
+
 
 # Load NDVI Images
 def load_ndvi_images():
     ndvi_series = {}
-    
-    # Boucle à travers les images NDVI par date
+
     for file in sorted(glob(os.path.join(ndvi_input_dir, '*_ndvi.png'))):
         date_str = os.path.basename(file).split('_ndvi.png')[0]
-        
-        # Chargement de l'image NDVI
         with rasterio.open(file) as src:
             ndvi = src.read(1).astype('float32')
             ndvi_series[date_str] = ndvi
-    
+
     print("Images NDVI chargées avec succès.")
     return ndvi_series
+
 
 # NDVI Classification
 def classify_ndvi(ndvi):
@@ -49,6 +48,7 @@ def classify_ndvi(ndvi):
     classes = np.where((ndvi > 0.6) & (ndvi <= 0.8), 6, classes)
     classes = np.where((ndvi > 0.8), 7, classes)
     return classes.astype(int)
+
 
 # Temporal Series by 30m Pixel
 def temporal_series_by_pixel(ndvi_series):
@@ -74,7 +74,7 @@ def temporal_series_by_pixel(ndvi_series):
     # Area Plot
     df_pixel = pd.DataFrame({'Date': dates, 'NDVI_Moyen': pixel_means})
     df_pixel.set_index('Date', inplace=True)
-    df_pixel.plot.area(stacked=True, figsize=(14, 8), alpha=0.5)
+    df_pixel.plot.area(stacked=False, figsize=(14, 8), alpha=0.5)  # 🔧 FIX ici
     plt.title('NDVI Moyen par Taille de Pixel de 30m (Area Plot)')
     plt.xlabel('Dates')
     plt.ylabel('NDVI Moyen')
@@ -86,18 +86,23 @@ def temporal_series_by_pixel(ndvi_series):
 
     print("Séries temporelles par pixel sauvegardées avec succès.")
 
+
 # Temporal Series by Vegetation Type
 def temporal_series_by_vegetation(ndvi_series):
     dates = sorted(ndvi_series.keys())
     class_means = {label: [] for label in ndvi_labels}
-    
+
     for date in dates:
         classified = classify_ndvi(ndvi_series[date])
         for i, label in enumerate(ndvi_labels):
-            class_mean = np.mean(ndvi_series[date][classified == i + 1])
+            class_mask = (classified == i + 1)
+            if np.any(class_mask):
+                class_mean = np.mean(ndvi_series[date][class_mask])
+            else:
+                class_mean = 0
             class_means[label].append(class_mean)
-    
-    # Série Temporelle
+
+    # Line plot
     plt.figure(figsize=(14, 8))
     for label, values in class_means.items():
         plt.plot(dates, values, label=label)
@@ -113,7 +118,7 @@ def temporal_series_by_vegetation(ndvi_series):
 
     # Area Plot
     df_veg = pd.DataFrame(class_means, index=dates)
-    df_veg.plot.area(stacked=True, figsize=(14, 8), alpha=0.5)
+    df_veg.plot.area(stacked=False, figsize=(14, 8), alpha=0.5)  # 🔧 FIX ici aussi
     plt.title('NDVI Moyen par Type de Végétation (Area Plot)')
     plt.xlabel('Dates')
     plt.ylabel('NDVI Moyen')
@@ -126,10 +131,16 @@ def temporal_series_by_vegetation(ndvi_series):
 
     print("Séries temporelles par type de végétation sauvegardées avec succès.")
 
+
 # Main Function
-def main():
+def main(ndvi_series):
     print("Début analyse NDVI")
-    ndvi_series = load_ndvi_images()
+
+    if not ndvi_series or not isinstance(ndvi_series, dict):
+        print("ERREUR : Aucun NDVI transmis ou format incorrect.")
+        return
+
     temporal_series_by_pixel(ndvi_series)
     temporal_series_by_vegetation(ndvi_series)
+
     print("Analyse NDVI terminée.")
