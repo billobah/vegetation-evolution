@@ -5,18 +5,26 @@ from ndvi import compute_ndvi
 from ndvi import analyze_ndvi
 
 
-if __name__ == "__main__":
-    # Étape 1 : téléchargement
+def run_pipeline():
+    print("=== Pipeline NDVI : Démarrage ===")
+
+    # 1. Téléchargement
     download_path = telechargement_scenes.main()
 
-    # Étape 2 : extraction
+    # 2. Extraction des images
     extraction_images.main(download_path)
 
-    # Étape 3 : découpage/redressement
+    # 3. Découpage et redressement
     cropped_path = crop_straighten_images.main()
 
-    # Étape 4 : calcul NDVI
+    # 4. Calcul NDVI
     ndvi_series = compute_ndvi.main(cropped_path)
 
-    # Étape 5 : analyse NDVI
+    # 5. Analyse NDVI
     analyze_ndvi.main(ndvi_series)
+
+    print("=== Pipeline NDVI : Terminé ===")
+
+
+if __name__ == "__main__":
+    run_pipeline()
