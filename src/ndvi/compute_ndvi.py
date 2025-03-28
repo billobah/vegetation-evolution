@@ -1,50 +1,41 @@
-# Import Libraries
 import os
 import numpy as np
 import matplotlib.pyplot as plt
 import rasterio
 from glob import glob
 
-# Folders Configuration
+# Dossiers
 cropped_dir = '../../data/cropped_straightened'
 ndvi_output_dir = '../../results/ndvi_results_cropped_straightened_images'
 os.makedirs(ndvi_output_dir, exist_ok=True)
 
-# Crop to Same Size
+# Recadrage
 def crop_to_same_size(image1, image2):
     min_rows = min(image1.shape[0], image2.shape[0])
     min_cols = min(image1.shape[1], image2.shape[1])
-    
-    image1_cropped = image1[:min_rows, :min_cols]
-    image2_cropped = image2[:min_rows, :min_cols]
-    
-    return image1_cropped, image2_cropped
+    return image1[:min_rows, :min_cols], image2[:min_rows, :min_cols]
 
-# NDVI Calculation
+# Calcul NDVI
 def calculate_ndvi(red, nir):
-    ndvi = np.where((nir + red) == 0., 0, (nir - red) / (nir + red))
-    return ndvi
+    return np.where((nir + red) == 0., 0, (nir - red) / (nir + red))
 
-
-def calculate_and_save_ndvi(red, nir, date_str):
-    ndvi = calculate_ndvi(red, nir)
-    save_path = os.path.join(ndvi_output_dir, f"{date_str}_ndvi.png")
+# Sauvegarde image NDVI
+def calculate_and_save_ndvi(ndvi: np.ndarray, image_name: str):
+    save_path = os.path.join(ndvi_output_dir, image_name.replace('.TIF', '_ndvi.png'))
     plt.figure(figsize=(10, 8))
     plt.imshow(ndvi, cmap='RdYlGn', vmin=-1, vmax=1)
     plt.colorbar(label='NDVI Value')
-    plt.title(f'NDVI Map - {date_str}')
+    plt.title(f'NDVI Map - {image_name}')
     plt.savefig(save_path)
     plt.close()
-    print(f"NDVI Image saved: {save_path}")
-    return ndvi
+    print(f"NDVI image saved: {save_path}")
 
-# Load Images
+# Lecture bande unique
 def load_band(image_path):
     with rasterio.open(image_path) as src:
-        image = src.read(1).astype('float32')
-    return image
+        return src.read(1).astype('float32')
 
-# Read and Process Images
+# Traitement BATCH NDVI
 def process_images(cropped_dir):
     ndvi_series = {}
 
@@ -52,20 +43,29 @@ def process_images(cropped_dir):
     b4_files = sorted(glob(os.path.join(cropped_dir, '*_B4_NIR_cropped_straightened.TIF')))
 
     if not b3_files or not b4_files:
-        print("No B3 or B4 images found in the directory.")
+        print("Aucun fichier B3 ou B4 trouvé dans le dossier.")
         return ndvi_series
 
     for b3_path, b4_path in zip(b3_files, b4_files):
-        date_str = os.path.basename(b3_path).split('_')[0]
-        print(f"\nProcessing images for date: {date_str}")
+        b3_name = os.path.basename(b3_path)
+        b4_name = os.path.basename(b4_path)
+
+        if not os.path.isfile(b3_path) or not os.path.isfile(b4_path):
+            print(f"Fichier manquant : {b3_name} ou {b4_name}")
+            continue
+
+        print(f"\nTraitement NDVI pour : {b3_name}")
 
         red = load_band(b3_path)
         nir = load_band(b4_path)
 
         red_cropped, nir_cropped = crop_to_same_size(red, nir)
-        ndvi = calculate_and_save_ndvi(red_cropped, nir_cropped, date_str)
-        ndvi_series[date_str] = ndvi
+        ndvi = calculate_ndvi(red_cropped, nir_cropped)
 
+        ndvi_series[b3_name] = ndvi  # clé = nom complet avec .TIF
+        calculate_and_save_ndvi(ndvi, b3_name)
+
+    print(f"\nNombre total d'images traitées : {len(ndvi_series)}")
     return ndvi_series
 
 

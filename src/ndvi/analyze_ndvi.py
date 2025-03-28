@@ -150,7 +150,7 @@ def generate_pdf_report(image_paths, output_path):
             pdf.cell(200, 10, f"[Fichier manquant] {img_path}", ln=True, align='L')
 
     pdf.output(output_path)
-    print(f"📄 Rapport PDF généré : {output_path}")
+    print(f"Rapport PDF généré : {output_path}")
 
 # Main Function
 def main(ndvi_series):

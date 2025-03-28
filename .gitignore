@@ -22,6 +22,10 @@ __pycache__/
 *.log
 logs/
 
+# DuckDB
+*.duckdb*
+*.wal
+*.tmp/
 
 # DBT (Data Build Tool)
 dbt_modules/
