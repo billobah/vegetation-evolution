@@ -3,7 +3,7 @@ import logging, time, subprocess, requests, random, os
 from six.moves.urllib import request as urequest
 import os.path as osp
 
-ACQ_PATH = '../../data/raw/landsat'
+ACQ_PATH = '../data/raw/landsat'
 
 sleep_seconds = 5
 total_max_retries = 3

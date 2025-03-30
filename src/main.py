@@ -12,16 +12,17 @@ def run_pipeline():
     download_path = telechargement_scenes.main()
 
     # 2. Extraction des images
-    extraction_images.main(download_path)
+    extract_path = "../data/raw/extract"  # On fixe explicitement le dossier d'extraction
+    extraction_images.main(download_path, extract_path)
 
     # 3. Découpage et redressement
-    cropped_path = crop_straighten_images.main()
+    # cropped_path = crop_straighten_images.main(extract_path)
 
     # 4. Calcul NDVI
-    ndvi_series = compute_ndvi.main(cropped_path)
+    # ndvi_series = compute_ndvi.main(cropped_path)
 
     # 5. Analyse NDVI
-    analyze_ndvi.main(ndvi_series)
+    # analyze_ndvi.main(ndvi_series)
 
     print("=== Pipeline NDVI : Terminé ===")
 

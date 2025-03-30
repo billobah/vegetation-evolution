@@ -6,19 +6,17 @@ import logging
 # Configuration du logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
-# Chemin du répertoire contenant les archives TAR
-download_dir = "../../data/raw/landsat"  # Met le bon chemin absolu si nécessaire
-
+# Répertoires par défaut (modifiable lors de l'appel à main)
+download_dir = "../data/raw/landsat"
+extract_dir = "../data/raw/extract"
 
 # Fonction pour extraire la date du nom de fichier
 def extract_date_from_filename(filename):
     match = re.search(r"^[^_]+_[^_]+_[^_]+_(\d{8})_", filename)
     return match.group(1) if match else None
 
-
-# Fonction pour extraire les bandes B3 et B4 et les organiser par date
-def extract_bands_from_tar(tar_path, download_dir):
-    """Extrait uniquement les bandes B3 et B4 et les organise par date."""
+# Fonction pour extraire uniquement les bandes B3 et B4
+def extract_bands_from_tar(tar_path, extract_dir):
     filename = os.path.basename(tar_path)
     date_str = extract_date_from_filename(filename)
 
@@ -26,19 +24,17 @@ def extract_bands_from_tar(tar_path, download_dir):
         logging.warning(f"Impossible d'extraire la date pour {filename}, fichier ignoré.")
         return
 
-    output_dir = os.path.join(download_dir, date_str)
+    output_dir = os.path.join(extract_dir, date_str)
 
-    # Vérifier si le dossier de destination existe déjà et contient des fichiers B3 et B4
+    # Vérifie si déjà traité
     if os.path.exists(output_dir) and any(f.endswith(("B3.TIF", "B4.TIF")) for f in os.listdir(output_dir)):
-        logging.info(f"Archive déjà traitée ({filename}), suppression de l'archive inutile.")
-        os.remove(tar_path)  # Supprime l'archive directement
+        logging.info(f"Archive déjà traitée ({filename}), images B3/B4 déjà extraites.")
         return
 
-    os.makedirs(output_dir, exist_ok=True)  # Créer le dossier si nécessaire
+    os.makedirs(output_dir, exist_ok=True)
 
-    # Ouvrir l'archive TAR
     try:
-        with tarfile.open(tar_path, "r:*") as tar:  # Gestion des différents formats .tar, .tar.gz, etc.
+        with tarfile.open(tar_path, "r:*") as tar:
             members_to_extract = [m for m in tar.getmembers() if "B3.TIF" in m.name or "B4.TIF" in m.name]
 
             if not members_to_extract:
@@ -47,30 +43,30 @@ def extract_bands_from_tar(tar_path, download_dir):
 
             for member in members_to_extract:
                 logging.info(f"Extraction de {member.name} vers {output_dir}")
-                tar.extract(member, output_dir)  # Extraction directe
+                tar.extract(member, output_dir)
 
-                # Renommer les fichiers pour éviter d’avoir des sous-dossiers
+                # Renommage à plat
                 extracted_path = os.path.join(output_dir, member.name)
                 new_path = os.path.join(output_dir, os.path.basename(member.name))
                 if extracted_path != new_path:
                     os.rename(extracted_path, new_path)
 
-        # Suppression de l'archive après extraction
-        os.remove(tar_path)
-        logging.info(f"Archive supprimée : {tar_path}")
+        logging.info(f"Extraction réussie pour {filename}")
 
     except Exception as e:
         logging.error(f"Erreur lors du traitement de {filename} : {e}")
 
-def main(download_dir):
-    print("Début examen dossier et traitement des archives TAR")
+# Fonction principale à appeler depuis un autre script
+def main(download_dir, extract_dir):
+    logging.info("Début traitement des archives TAR")
+
     for file in os.listdir(download_dir):
         tar_path = os.path.join(download_dir, file)
         if os.path.isfile(tar_path) and tar_path.endswith(".tar"):
             logging.info(f"Traitement de l'archive : {tar_path}")
-            extract_bands_from_tar(tar_path, download_dir)
+            extract_bands_from_tar(tar_path, extract_dir)
 
-    print("Début suppression des fichiers .tar.size")
+    logging.info("Suppression des fichiers .tar.size inutiles")
     for file in os.listdir(download_dir):
         size_file_path = os.path.join(download_dir, file)
         if file.endswith(".tar.size"):
@@ -78,3 +74,5 @@ def main(download_dir):
             logging.info(f"Fichier supprimé : {size_file_path}")
 
     logging.info("Extraction et organisation terminées.")
+
+    return extract_dir
