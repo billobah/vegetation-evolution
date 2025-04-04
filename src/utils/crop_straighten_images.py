@@ -1,109 +1,90 @@
-# Import Libraries
 import os
-import cv2
-import rasterio
-from glob import glob
 import numpy as np
+import rasterio
+from rasterio.enums import Resampling
+from utils import images_to_process
 
-# Define input and output directories
-input_dir = '../../data/raw/landsat'
-cropped_dir = '../../data/cropped_straightened'
-os.makedirs(cropped_dir, exist_ok=True)
+CROPPED_OUTPUT_DIR = "../data/cropped"
 
-# Loading images
-def load_band(band_path):
-    with rasterio.open(band_path) as src:
-        band = src.read(1).astype('float32')
-        band_meta = src.meta
-    return band, band_meta
+def load_and_crop_center(image_path: str, crop_ratio: float = 0.5) -> np.ndarray:
+    """
+    Charge une image .TIF et effectue un crop central carré dynamique.
+    Le crop_size est défini comme un pourcentage (crop_ratio) de la plus petite dimension.
+    """
+    with rasterio.open(image_path) as src:
+        img = src.read(1, resampling=Resampling.bilinear)
+        h, w = img.shape
+        crop_size = int(min(h, w) * crop_ratio)
 
-# Order the corners of the rectangle
-def order_points(pts):
-    rect = np.zeros((4, 2), dtype="float32")
-    s = pts.sum(axis=1)
-    rect[0] = pts[np.argmin(s)]
-    rect[2] = pts[np.argmax(s)]
-    diff = np.diff(pts, axis=1)
-    rect[1] = pts[np.argmin(diff)]
-    rect[3] = pts[np.argmax(diff)]
-    return rect
+        if crop_size < 32:
+            raise ValueError(f"Le crop_size est trop petit ({crop_size} pixels) pour {image_path}")
 
-# Detect contour and straighten the image
-def detect_and_straighten(image, meta, date_str, band_name):
-    norm_image = cv2.normalize(image, None, 0, 255, cv2.NORM_MINMAX).astype('uint8')
-    _, thresholded = cv2.threshold(norm_image, 1, 255, cv2.THRESH_BINARY)
-    contours, _ = cv2.findContours(thresholded, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    
-    if not contours:
-        print("Aucun contour trouvé.")
-        return image
-    
-    largest_contour = max(contours, key=cv2.contourArea)
-    epsilon = 0.02 * cv2.arcLength(largest_contour, True)
-    approx = cv2.approxPolyDP(largest_contour, epsilon, True)
-    
-    if len(approx) >= 4:
-        pts = approx.reshape(-1, 2)
-        rect = order_points(pts)
-        
-        (tl, tr, br, bl) = rect
-        maxWidth = int(max(np.linalg.norm(br - bl), np.linalg.norm(tr - tl)))
-        maxHeight = int(max(np.linalg.norm(tr - br), np.linalg.norm(tl - bl)))
-        
-        dst = np.array([
-            [0, 0],
-            [maxWidth - 1, 0],
-            [maxWidth - 1, maxHeight - 1],
-            [0, maxHeight - 1]
-        ], dtype="float32")
-        
-        M = cv2.getPerspectiveTransform(rect, dst)
-        straightened_image = cv2.warpPerspective(image, M, (maxWidth, maxHeight))
-        
-        # Sauvegarde de l'image redressée au format TIF
-        save_path = os.path.join(cropped_dir, f"{date_str}_{band_name}_cropped_straightened.TIF")
-        meta.update({
-            "height": straightened_image.shape[0],
-            "width": straightened_image.shape[1]
-        })
-        
-        with rasterio.open(save_path, 'w', **meta) as dst:
-            dst.write(straightened_image, 1)
-        
-        print(f"Image redressée et sauvegardée : {save_path}")
-        return straightened_image
-    else:
-        print("Les coins n'ont pas été correctement détectés.")
-        return image
+        center_h, center_w = h // 2, w // 2
+        half_crop = crop_size // 2
 
-# Process each image in the directory
-def process_images():
-    for date_dir in sorted(glob(os.path.join(input_dir, '*'))):
-        date_str = os.path.basename(date_dir)
-        
-        # Rechercher les fichiers B3 et B4
-        b3_files = glob(os.path.join(date_dir, '*_B3.TIF'))
-        b4_files = glob(os.path.join(date_dir, '*_B4.TIF'))
-        
-        if not b3_files or not b4_files:
-            print(f"Pas de fichiers B3 ou B4 trouvés pour la date : {date_str}")
-            continue
-        
-        # Charger les images B3 et B4
-        b3_path = b3_files[0]
-        b4_path = b4_files[0]
-        red, red_meta = load_band(b3_path)
-        nir, nir_meta = load_band(b4_path)
-        
-        # Découper et redresser les images
-        detect_and_straighten(red, red_meta, date_str, 'B3_Rouge')
-        detect_and_straighten(nir, nir_meta, date_str, 'B4_NIR')
+        cropped = img[
+            center_h - half_crop: center_h + half_crop,
+            center_w - half_crop: center_w + half_crop
+        ]
+        return cropped.astype(np.float32)
 
-# Main Function
-def main():
-    print("Début découpage et redressement des images.")
-    process_images()
-    print("Découpage et redressement des images terminés.")
+def preprocess_image(b3_path: str, b4_path: str, crop_ratio: float = 0.5) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Applique un crop central dynamique sur les deux images B3 et B4.
+    """
+    b3 = load_and_crop_center(b3_path, crop_ratio)
+    b4 = load_and_crop_center(b4_path, crop_ratio)
+    return b3, b4
 
-    # Retour du dossier contenant les images redressées
-    return cropped_dir
+def save_cropped_image(array: np.ndarray, output_path: str):
+    """
+    Sauvegarde une image numpy en format GeoTIFF sans géoréférencement.
+    """
+    with rasterio.open(
+        output_path,
+        'w',
+        driver='GTiff',
+        height=array.shape[0],
+        width=array.shape[1],
+        count=1,
+        dtype=array.dtype,
+        crs='+proj=latlong',
+        transform=rasterio.Affine.identity()
+    ) as dst:
+        dst.write(array, 1)
+
+def main(crop_ratio: float = 0.5) -> list[dict]:
+    """
+    Traite toutes les images détectées (via images_to_process) et sauvegarde les crops.
+    Retourne la liste des scènes cropées.
+    """
+    os.makedirs(CROPPED_OUTPUT_DIR, exist_ok=True)
+
+    scenes = images_to_process.main()
+    processed = []
+
+    for scene in scenes:
+        scene_id = scene["scene_id"]
+        b3_path = scene["b3"]
+        b4_path = scene["b4"]
+
+        try:
+            b3_crop, b4_crop = preprocess_image(b3_path, b4_path, crop_ratio)
+
+            b3_output = os.path.join(CROPPED_OUTPUT_DIR, f"{scene_id}_B3_crop.tif")
+            b4_output = os.path.join(CROPPED_OUTPUT_DIR, f"{scene_id}_B4_crop.tif")
+
+            save_cropped_image(b3_crop, b3_output)
+            save_cropped_image(b4_crop, b4_output)
+
+            processed.append({
+                "scene_id": scene_id,
+                "b3_crop": b3_output,
+                "b4_crop": b4_output
+            })
+
+            print(f"{scene_id} cropé et sauvegardé.")
+        except Exception as e:
+            print(f"Erreur pour {scene_id} : {e}")
+
+    return processed

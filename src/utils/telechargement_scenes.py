@@ -29,5 +29,5 @@ def main():
     logging.info(f"Fichiers téléchargés : {downloadMeta}")
 
     # Return du chemin de téléchargement
-    download_dir = "../../data/raw/landsat"
+    download_dir = "../data/raw/landsat"
     return download_dir

@@ -1,75 +1,67 @@
-# Import Libraries
 import os
 import numpy as np
-import matplotlib.pyplot as plt
 import rasterio
-from glob import glob
 
-# Folders Configuration
-cropped_dir = '../../data/cropped_straightened'
-ndvi_output_dir = '../../results/ndvi_results_cropped_straightened_images'
-os.makedirs(ndvi_output_dir, exist_ok=True)
+NDVI_OUTPUT_DIR = "../data/ndvi"
 
-# Crop to Same Size
-def crop_to_same_size(image1, image2):
-    min_rows = min(image1.shape[0], image2.shape[0])
-    min_cols = min(image1.shape[1], image2.shape[1])
-    
-    image1_cropped = image1[:min_rows, :min_cols]
-    image2_cropped = image2[:min_rows, :min_cols]
-    
-    return image1_cropped, image2_cropped
+def calculate_ndvi(b3: np.ndarray, b4: np.ndarray) -> np.ndarray:
+    """
+    Calcule l'indice NDVI à partir des bandes B3 et B4.
+    """
+    np.seterr(divide='ignore', invalid='ignore')  # éviter division par zéro
+    denominator = b4 + b3
+    ndvi = np.where(denominator == 0, 0, (b4 - b3) / denominator)
+    return ndvi.astype(np.float32)
 
-# NDVI Calculation
-def calculate_ndvi(red, nir):
-    ndvi = np.where((nir + red) == 0., 0, (nir - red) / (nir + red))
-    return ndvi
+def save_ndvi_image(ndvi: np.ndarray, output_path: str):
+    """
+    Sauvegarde l'image NDVI en GeoTIFF (sans géoréférencement).
+    """
+    with rasterio.open(
+        output_path,
+        'w',
+        driver='GTiff',
+        height=ndvi.shape[0],
+        width=ndvi.shape[1],
+        count=1,
+        dtype=ndvi.dtype,
+        crs='+proj=latlong',
+        transform=rasterio.Affine.identity()
+    ) as dst:
+        dst.write(ndvi, 1)
 
+def main(cropped_scenes: list[dict]) -> list[dict]:
+    """
+    Pour chaque scène cropée, calcule le NDVI et le sauvegarde au format GeoTIFF.
+    Retourne une liste de dictionnaires avec scene_id et chemin NDVI.
+    """
+    os.makedirs(NDVI_OUTPUT_DIR, exist_ok=True)
+    ndvi_results = []
 
-def calculate_and_save_ndvi(red, nir, date_str):
-    ndvi = calculate_ndvi(red, nir)
-    save_path = os.path.join(ndvi_output_dir, f"{date_str}_ndvi.png")
-    plt.figure(figsize=(10, 8))
-    plt.imshow(ndvi, cmap='RdYlGn', vmin=-1, vmax=1)
-    plt.colorbar(label='NDVI Value')
-    plt.title(f'NDVI Map - {date_str}')
-    plt.savefig(save_path)
-    plt.close()
-    print(f"NDVI Image saved: {save_path}")
-    return ndvi
+    for scene in cropped_scenes:
+        scene_id = scene["scene_id"]
+        b3_path = scene["b3_crop"]
+        b4_path = scene["b4_crop"]
 
-# Load Images
-def load_band(image_path):
-    with rasterio.open(image_path) as src:
-        image = src.read(1).astype('float32')
-    return image
+        try:
+            with rasterio.open(b3_path) as src:
+                b3 = src.read(1).astype(np.float32)
+            with rasterio.open(b4_path) as src:
+                b4 = src.read(1).astype(np.float32)
 
-# Read and Process Images
-def process_images(cropped_dir):
-    ndvi_series = {}
+            ndvi = calculate_ndvi(b3, b4)
+            ndvi_path = os.path.join(NDVI_OUTPUT_DIR, f"{scene_id}_ndvi.tif")
 
-    b3_files = sorted(glob(os.path.join(cropped_dir, '*_B3_Rouge_cropped_straightened.TIF')))
-    b4_files = sorted(glob(os.path.join(cropped_dir, '*_B4_NIR_cropped_straightened.TIF')))
+            save_ndvi_image(ndvi, ndvi_path)
 
-    if not b3_files or not b4_files:
-        print("No B3 or B4 images found in the directory.")
-        return ndvi_series
+            ndvi_results.append({
+                "scene_id": scene_id,
+                "ndvi_path": ndvi_path
+            })
 
-    for b3_path, b4_path in zip(b3_files, b4_files):
-        date_str = os.path.basename(b3_path).split('_')[0]
-        print(f"\nProcessing images for date: {date_str}")
+            print(f"NDVI généré et sauvegardé : {ndvi_path}")
 
-        red = load_band(b3_path)
-        nir = load_band(b4_path)
+        except Exception as e:
+            print(f"Erreur NDVI pour {scene_id} : {e}")
 
-        red_cropped, nir_cropped = crop_to_same_size(red, nir)
-        ndvi = calculate_and_save_ndvi(red_cropped, nir_cropped, date_str)
-        ndvi_series[date_str] = ndvi
-
-    return ndvi_series
-
-
-def main(cropped_dir):
-    ndvi_series = process_images(cropped_dir)
-    print("\nCalcul du NDVI terminé.")
-    return ndvi_series
+    return ndvi_results
