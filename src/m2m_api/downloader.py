@@ -1,9 +1,13 @@
 import concurrent.futures
-import logging, time, subprocess, requests, random, os
-from six.moves.urllib import request as urequest
+import logging
+import time
+import subprocess
+import requests
+import random
+import os
 import os.path as osp
 
-ACQ_PATH = '../data/raw/landsat'
+from six.moves.urllib import request as urequest
 
 sleep_seconds = 5
 total_max_retries = 3
@@ -14,26 +18,13 @@ download_sleep_seconds = 3
 max_threads = 10
 
 class DownloadError(Exception):
-    """
-    Raised when the downloader is unable to retrieve a URL.
-    """
+    """Raised when the downloader is unable to retrieve a URL."""
     pass
 
 def download_url(url, local_path, max_retries=total_max_retries, sleep_seconds=sleep_seconds):
-    """
-    Download a remote URL to the location local_path with retries.
-
-    On download, the file size is first obtained and stored.  When the download completes,
-    the file size is compared to the stored file.  This prevents broken downloads from
-    contaminating the processing chain.
-
-    :param url: the remote URL
-    :param local_path: the path to the local file
-    :param max_retries: how many times we may retry to download the file
-    :param sleep_seconds: sleep seconds between retries
-    """
+    """Download a remote URL to the location local_path with retries."""
     dname = osp.basename(local_path)
-    logging.info('download_url - {} - downloading {} as {}'.format(dname, url, local_path))
+    logging.info(f'download_url - {dname} - downloading {url} as {local_path}')
     sec = random.random() * download_sleep_seconds
     time.sleep(sec)
 
@@ -41,51 +32,45 @@ def download_url(url, local_path, max_retries=total_max_retries, sleep_seconds=s
         r = requests.get(url, stream=True)
         content_size = int(r.headers.get('content-length', 0))
         if content_size == 0:
-            logging.error('download_url - content size is equal to 0')
-            raise DownloadError('download_url - content size is equal to 0')
+            logging.error('download_url - content size is 0')
+            raise DownloadError('Content size is 0')
     except Exception as e:
         if max_retries > 0:
-            logging.info('download_url - {} - trying again with {} available retries'.format(dname, max_retries))
+            logging.info(f'download_url - {dname} - retrying ({max_retries} retries left)')
             time.sleep(sleep_seconds)
-            download_url(url, local_path, max_retries = max_retries - 1, sleep_seconds=sleep_seconds)
-        logging.error('download_url - {} - no more retries available'.format(dname))
-        raise DownloadError('download_url - {} - failed to find file {}'.format(dname, url))
+            return download_url(url, local_path, max_retries=max_retries-1, sleep_seconds=sleep_seconds)
+        logging.error(f'download_url - {dname} - no more retries available')
+        raise DownloadError(f'Failed to find file {url}')
 
     remove(local_path)
-    logging.info('download_url - {} - starting download...'.format(dname))
-    '''
-    command=[wget,'-O',ensure_dir(local_path),url]
-    for opt in wget_options:
-        command.insert(1,opt)
-    logging.info(' '.join(command))
-    subprocess.call(' '.join(command),shell=True)
-    '''
+    logging.info(f'download_url - {dname} - starting download...')
+
     with open(ensure_dir(local_path), 'wb') as f:
         f.write(r.raw.read())
 
     file_size = osp.getsize(local_path)
-    logging.info('download_url - {} - local file size {} remote content size {}'.format(dname, file_size, content_size))
-    if int(file_size) != int(content_size) and int(content_size) > 0:
-        logging.warning('download_url - {} - wrong file size, trying again, retries available {}'.format(dname, max_retries))
+    if int(file_size) != int(content_size) and content_size > 0:
+        logging.warning(f'download_url - {dname} - wrong file size, retrying, {max_retries} retries left')
         if max_retries > 0:
             time.sleep(sleep_seconds)
-            download_url(url, local_path, content_size, max_retries = max_retries-1, sleep_seconds=sleep_seconds)
-        logging.error('download_url - {} - deleting local file, no more retries available'.format(dname))
+            return download_url(url, local_path, max_retries=max_retries-1, sleep_seconds=sleep_seconds)
         remove(local_path)
-        raise DownloadError('download_url - {} - failed to download file {}'.format(dname, url))
-        
+        raise DownloadError(f'Failed to download file {url}')
+
     info_path = local_path + '.size'
-    open(ensure_dir(info_path), 'w').write(str(content_size))
-    logging.info('download_url - {} - success download'.format(dname))
+    with open(ensure_dir(info_path), 'w') as f:
+        f.write(str(content_size))
 
-def download_scenes(downloads, downloadMeta):
-    """
-    Download all scenes using multithreading.
+    logging.info(f'download_url - {dname} - success download')
 
-    :param downloads: list of downloadable scenes
-    :param downloadMeta: dictionary with metadata from all scenes
-    """
-    logging.info('download_scenes - downloading {} scenes'.format(len(downloads)))
+def download_scenes(downloads, downloadMeta, download_dir=None):
+    """Download all scenes using multithreading."""
+    logging.info(f'download_scenes - downloading {len(downloads)} scenes')
+
+    # If no download_dir specified, use default
+    if download_dir is None:
+        download_dir = '../data/raw/landsat'
+
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_threads) as executor:
         futures = []
         for download in downloads:
@@ -93,47 +78,38 @@ def download_scenes(downloads, downloadMeta):
             idD = str(download['downloadId'])
             if idD in downloadMeta.keys():
                 displayId = downloadMeta[idD]['displayId']
-                local_path = osp.join(ACQ_PATH,displayId+'.tar')
+                local_path = osp.join(download_dir, displayId + '.tar')
                 if available_locally(local_path):
-                    logging.info('downloadScenes - file {} is locally available'.format(local_path))
+                    logging.info(f'downloadScenes - file {local_path} is already available')
                 else:
                     future = executor.submit(download_url, url, local_path)
                     futures.append(future)
                 downloadMeta[idD].update({'url': url, 'local_path': local_path})
             else:
-                logging.warning(f'download_scenes - scene ID {idD} not in metadata')
+                logging.warning(f'download_scenes - scene ID {idD} not found in metadata')
+
         finished = 0
         for future in concurrent.futures.as_completed(futures):
             finished += 1
-            logging.info('download_scenes - download finished by {}/{} scenes'.format(finished,len(futures)))
-    logging.info('download_scenes - all download scenes finished')
+            logging.info(f'download_scenes - {finished}/{len(futures)} downloads finished')
+
+    logging.info('download_scenes - all downloads finished')
 
 def ensure_dir(path):
-    """
-    Ensure all directories in path if a file exist, for convenience return path itself.
-
-    :param path: the path whose directories should exist
-    :return: the path back for convenience
-    """
+    """Ensure all directories in path exist. Return path itself."""
     path_dir = osp.dirname(path)
     if not osp.exists(path_dir):
         os.makedirs(path_dir)
     return path
 
 def remove(tgt):
-    """
-    os.remove wrapper
-    """
+    """Remove a file if it exists."""
     if osp.isfile(tgt):
-        logging.info('remove - file {} exists, removing'.format(tgt))
+        logging.info(f'remove - removing file {tgt}')
         os.remove(tgt)
 
 def available_locally(path):
-    """
-    Check if a file is available locally and if it's file size checks out.
-
-    :param path: the file path
-    """
+    """Check if a file is available locally and correct."""
     info_path = path + '.size'
     if osp.exists(path) and osp.exists(info_path):
         content_size = int(open(info_path).read())

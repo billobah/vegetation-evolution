@@ -1,5 +1,10 @@
+import os
 import logging
 from src.m2m_api.api import M2M
+
+# ➔ Dynamique : on récupère automatiquement le dossier /src/
+BASE_DIR = os.path.dirname(os.path.dirname(__file__))
+LANDSAT_DIR = os.path.join(BASE_DIR, "data/raw/landsat")
 
 # Configuration du logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -20,14 +25,23 @@ params = {
 # Initialisation de l'API
 m2m = M2M()
 
-# Main Function
+
 def main():
     print("Recherche et téléchargement des scènes")
+
+    # Assure que le dossier existe
+    os.makedirs(LANDSAT_DIR, exist_ok=True)
+
     scenes = m2m.searchScenes(**params)
+
+    # On enlève download_dir car pas accepté par l'API
     downloadMeta = m2m.retrieveScenes(params["datasetName"], scenes)
+
     print("Vérification du format des fichiers téléchargés")
     logging.info(f"Fichiers téléchargés : {downloadMeta}")
 
-    # Return du chemin de téléchargement
-    download_dir = "../data/raw/landsat"
-    return download_dir
+    return LANDSAT_DIR
+
+
+if __name__ == "__main__":
+    main()

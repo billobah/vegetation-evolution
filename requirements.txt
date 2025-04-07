@@ -1,3 +1,4 @@
+duckdb==1.2.1
 fpdf==1.7.2
 google-api-core==2.24.1
 google-api-python-client==2.162.0
