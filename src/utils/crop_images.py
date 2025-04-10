@@ -3,10 +3,9 @@ import duckdb
 import numpy as np
 import rasterio
 
-# Définition dynamique des chemins
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
-CROPPED_DIR = os.path.join(BASE_DIR, "data", "cropped")
 DB_PATH = os.path.join(BASE_DIR, "bdd", "ndvi.duckdb")
+CROPPED_DIR = os.path.join(BASE_DIR, "data", "cropped")
 
 def crop_center(img: np.ndarray, crop_ratio: float = 0.5) -> np.ndarray:
     h, w = img.shape
@@ -21,7 +20,7 @@ def crop_and_store_images(con):
     os.makedirs(CROPPED_DIR, exist_ok=True)
 
     con.execute("""
-        CREATE TABLE IF NOT EXISTS cropped_images (
+        CREATE OR REPLACE TABLE cropped_images (
             scene_id TEXT PRIMARY KEY,
             b3_crop_path TEXT,
             b4_crop_path TEXT,
@@ -67,8 +66,7 @@ def crop_and_store_images(con):
                     dst.write(array, 1)
 
             con.execute("""
-                INSERT OR REPLACE INTO cropped_images 
-                VALUES (?, ?, ?, ?, ?)
+                INSERT OR REPLACE INTO cropped_images VALUES (?, ?, ?, ?, ?)
             """, (scene_id, output_b3, output_b4, b3_crop.shape[1], b3_crop.shape[0]))
 
         except Exception as e:

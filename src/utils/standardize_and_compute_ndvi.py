@@ -1,7 +1,8 @@
+import os
 import duckdb
 import numpy as np
 import rasterio
-import os
+import logging
 
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 DB_PATH = os.path.join(BASE_DIR, "bdd", "ndvi.duckdb")
@@ -13,12 +14,13 @@ def calculate_ndvi(b3, b4):
     return ndvi
 
 def standardize_and_compute_ndvi(con):
-    print("Calcul du NDVI...")
+    logging.info("Étape 3 : Calcul et standardisation du NDVI...")
 
+    # 🛠️ Correction ici : FLOAT[] au lieu de LIST<FLOAT>
     con.execute("""
-        CREATE TABLE IF NOT EXISTS standardized_ndvi (
+        CREATE OR REPLACE TABLE standardized_ndvi (
             scene_id TEXT PRIMARY KEY,
-            ndvi_array BLOB,
+            ndvi_array FLOAT[],
             width INT,
             height INT
         );
@@ -40,18 +42,17 @@ def standardize_and_compute_ndvi(con):
             b4 = b4[:min_height, :min_width]
 
             ndvi = calculate_ndvi(b3, b4)
-
-            ndvi_bytes = ndvi.astype(np.float32).tobytes()
+            ndvi_flat = ndvi.flatten().astype(np.float32)
 
             con.execute("""
                 INSERT OR REPLACE INTO standardized_ndvi 
                 VALUES (?, ?, ?, ?)
-            """, (scene_id, ndvi_bytes, min_width, min_height))
+            """, (scene_id, ndvi_flat.tolist(), min_width, min_height))
 
         except Exception as e:
-            print(f"Erreur NDVI pour {scene_id} : {e}")
+            logging.error(f"Erreur NDVI pour {scene_id} : {e}")
 
-    print("NDVI standardisé calculé.")
+    logging.info("NDVI standardisé calculé.")
 
 if __name__ == "__main__":
     con = duckdb.connect(DB_PATH)
