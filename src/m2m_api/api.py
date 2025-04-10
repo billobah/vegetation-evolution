@@ -14,9 +14,7 @@ M2M_ENDPOINT = 'https://m2m.cr.usgs.gov/api/api/json/{}/'
 logging.getLogger('requests').setLevel(logging.WARNING)
 
 class M2MError(Exception):
-    """
-    Raised when an M2M gets an error.
-    """
+    """Raised when an M2M gets an error."""
     pass
 
 class M2M(object):
@@ -31,47 +29,35 @@ class M2M(object):
         self.permissions = self.sendRequest('permissions')
 
     def authenticate(self, username, password, token):
-        config_path = '~/.config/m2m_api'
-        config_path = Path(osp.expandvars(config_path)).expanduser().resolve()
+        config_path = Path(osp.expandvars('~/.config/m2m_api')).expanduser().resolve()
         config_file = config_path / 'config.json'
+
         try:
             config = json.load(open(config_file))
         except:
             config_path.mkdir(parents=True, exist_ok=True)
-            config = {} 
-        
-        self.username = username
+            config = {}
+
+        self.username = username or config.get('username')
         if self.username is None:
-            self.username = config.get('username')
-            if self.username is None:
-                username = input("Enter your username (or email): ")
-                self.username = username
-                config['username'] = username
-            
-        if password != None:
+            self.username = input("Enter your username (or email): ")
+            config['username'] = self.username
+
+        if password:
             self.login(password)
-        elif token != None:
-            config = {
-                'username': username,
-                'token': token
-            }
+        elif token:
+            config.update({'username': self.username, 'token': token})
             json.dump(config, open(config_file, 'w'), indent=4, separators=(',', ': '))
             self.loginToken(token)
         else:
             token = config.get('token')
             if token is None:
-                option = None
-                while option not in ["p", "P", "t", "T"]:
-                    option = input("Want to use password (p) or token (t)? ")
-                if option in ["p", "P"]:
-                    password = getpass()
-                    self.login(password)
+                option = input("Use password (p) or token (t)? ").lower()
+                if option == "p":
+                    self.login(getpass())
                 else:
                     token = input('Enter your token: ')
-                    config = {
-                        'username': username,
-                        'token': token
-                    }
+                    config.update({'username': self.username, 'token': token})
                     json.dump(config, open(config_file, 'w'), indent=4, separators=(',', ': '))
                     self.loginToken(token)
             else:
@@ -79,51 +65,41 @@ class M2M(object):
 
     def sendRequest(self, endpoint, data={}, max_retries=5):
         url = osp.join(self.serviceUrl, endpoint)
-        logging.info('sendRequest - url = {}'.format(url))
+        logging.info(f'sendRequest - url = {url}')
         json_data = json.dumps(data)
-        if self.apiKey == None:
-            response = retry_connect(url, json_data, max_retries=max_retries)
-        else:
-            headers = {'X-Auth-Token': self.apiKey}   
-            response = retry_connect(url, json_data, headers=headers, max_retries=max_retries)
-        if response == None:
+        headers = {'X-Auth-Token': self.apiKey} if self.apiKey else {}
+
+        response = retry_connect(url, json_data, headers=headers, max_retries=max_retries)
+        if response is None:
             raise M2MError("No output from service")
-        status = response.status_code 
+
+        status = response.status_code
         try:
             output = json.loads(response.text)
-        except:
+        except Exception:
             output = response.text
-        if status != 200:
-            if isinstance(output,dict):
-                msg = "{} - {} - {}".format(status,output['errorCode'],output['errorMessage'])
-            else:
-                msg = "{} - {}".format(status,output)
+
+        if status != 200 or (isinstance(output, dict) and output.get('errorCode')):
+            msg = f"{status} - {output.get('errorCode', '')} - {output.get('errorMessage', '')}" if isinstance(output, dict) else f"{status} - {output}"
             raise M2MError(msg)
-        else:
-            if isinstance(output,dict): 
-                if output['data'] is None and output['errorCode'] is not None and endpoint != 'logout':
-                    msg = "{} - {}".format(output['errorCode'],output['errorMessage'])
-                    raise M2MError(msg)
-            else:
-                msg = "{} - {}".format(status,output)
-                raise M2MError(msg)
+
         response.close()
         return output['data']
 
     def login(self, password=None):
         if password is None:
-            raise M2MError('password not provided')
+            raise M2MError('Password not provided')
         loginParameters = {'username': self.username, 'password': password}
         self.apiKey = self.sendRequest('login', loginParameters)
 
     def loginToken(self, token=None):
-        if token is None: 
-            raise M2MError('token not provided')
+        if token is None:
+            raise M2MError('Token not provided')
         loginParameters = {'username': self.username, 'token': token}
         self.apiKey = self.sendRequest('login-token', loginParameters)
 
     def searchDatasets(self, **args):
-        args['processList'] = ['datasetName','acquisitionFilter','spatialFilter']
+        args['processList'] = ['datasetName', 'acquisitionFilter', 'spatialFilter']
         params = Filter(args)
         return self.sendRequest('dataset-search', params)
 
@@ -134,25 +110,23 @@ class M2M(object):
 
     def searchScenes(self, datasetName, **args):
         if datasetName not in self.datasetNames:
-            raise M2MError("Dataset {} not one of the available datasets {}".format(datasetName,self.datasetNames))
+            raise M2MError(f"Dataset {datasetName} not one of the available datasets {self.datasetNames}")
         args['datasetName'] = datasetName
         if 'metadataInfo' in args and len(args['metadataInfo']):
             args['datasetFilters'] = self.datasetFilters(**args)
-        args['processList'] = ['datasetName','sceneFilter','maxResults']
+        args['processList'] = ['datasetName', 'sceneFilter', 'maxResults']
         params = Filter(args)
         scenes = self.sendRequest('scene-search', params)
         if scenes['totalHits'] > scenes['recordsReturned']:
-            logging.warning('M2M.searchScenes - more hits {} than returned records {}, consider increasing maxResults parameter.'.format(scenes['totalHits'],
-                                                                                                                                        scenes['recordsReturned']))
+            logging.warning(f'M2M.searchScenes - more hits {scenes["totalHits"]} than returned records {scenes["recordsReturned"]}')
         return scenes
 
     def sceneListAdd(self, listId, datasetName, **args):
-        args['listId'] = listId
         if datasetName not in self.datasetNames:
-            raise M2MError("Dataset {} not one of the available datasets {}".format(datasetName,self.datasetNames))
-        args['datasetName'] = datasetName
+            raise M2MError(f"Dataset {datasetName} not one of the available datasets {self.datasetNames}")
+        args.update({'listId': listId, 'datasetName': datasetName})
         self.sendRequest('scene-list-add', args)
-    
+
     def sceneListGet(self, listId, **args):
         args['listId'] = listId
         self.sendRequest('scene-list-get', args)
@@ -163,15 +137,13 @@ class M2M(object):
 
     def downloadOptions(self, datasetName, filterOptions={}, **args):
         if datasetName not in self.datasetNames:
-            raise M2MError("Dataset {} not one of the available datasets {}".format(datasetName,self.datasetNames))
+            raise M2MError(f"Dataset {datasetName} not one of the available datasets {self.datasetNames}")
         args['datasetName'] = datasetName
         downloadOptions = self.sendRequest('download-options', args)
-        filteredOptions = apply_filter(downloadOptions, filterOptions)
-        return filteredOptions
-            
+        return apply_filter(downloadOptions, filterOptions)
+
     def downloadRequest(self, downloadList, label='m2m-api_download'):
-        params = {'downloads': downloadList,
-                'label': label}
+        params = {'downloads': downloadList, 'label': label}
         return self.sendRequest('download-request', params)
 
     def downloadRetrieve(self, label='m2m-api_download'):
@@ -179,75 +151,75 @@ class M2M(object):
         return self.sendRequest('download-retrieve', params)
 
     def downloadSearch(self, label=None):
-        if label is not None:
-            params = {'label': label}
-            return self.sendRequest('download-search', params)
-        return self.sendRequest('download-search')
+        params = {'label': label} if label else {}
+        return self.sendRequest('download-search', params)
 
     def downloadOrderRemove(self, label):
         params = {'label': label}
         self.sendRequest('download-order-remove', params)
 
-    def retrieveScenes(self, datasetName, scenes, filterOptions={}, label='m2m-api_download'):
+    def retrieveScenes(self, datasetName, scenes, filterOptions={}, label='m2m-api_download', download_dir=None):
+        """Méthode corrigée pour accepter un chemin de téléchargement dynamique."""
         entityIds = [scene['entityId'] for scene in scenes['results']]
         self.sceneListAdd(label, datasetName, entityIds=entityIds)
         downloadMeta = {}
-        if not len(filterOptions):
+        if not filterOptions:
             filterOptions = {'downloadSystem': lambda x: x in ['dds', 'ls_zip'], 'available': lambda x: x}
+
         labels = [label]
-        downloadOptions = self.downloadOptions(
-            datasetName, filterOptions, listId=label, includeSecondaryFileGroups=False
-        )
-        downloads = [
-            {
-                'entityId' : product['entityId'], 'productId' : product['id']
-            } for product in downloadOptions
-        ]
+        downloadOptions = self.downloadOptions(datasetName, filterOptions, listId=label, includeSecondaryFileGroups=False)
+        downloads = [{'entityId': product['entityId'], 'productId': product['id']} for product in downloadOptions]
+
         requestedDownloadsCount = len(downloads)
         if requestedDownloadsCount:
-            logging.info('M2M.retrieveScenes - Requested downloads count={}'.format(requestedDownloadsCount))
+            logging.info(f'M2M.retrieveScenes - Requested downloads count={requestedDownloadsCount}')
             requestResults = self.downloadRequest(downloads, label=label)
-            if len(requestResults['duplicateProducts']):
+
+            if requestResults.get('duplicateProducts'):
                 for product in requestResults['duplicateProducts'].values():
                     if product not in labels:
                         labels.append(product)
-            for label in labels:
-                downloadSearch = self.downloadSearch(label)
-                if downloadSearch is not None:
+
+            for lbl in labels:
+                downloadSearch = self.downloadSearch(lbl)
+                if downloadSearch:
                     for ds in downloadSearch:
-                        downloadMeta.update({str(ds['downloadId']): ds})
-            if requestResults['preparingDownloads'] != None and len(requestResults['preparingDownloads']) > 0:
+                        downloadMeta[str(ds['downloadId'])] = ds
+
+            if requestResults.get('preparingDownloads'):
                 downloadIds = []
-                for label in labels:
-                    requestResultsUpdated = self.downloadRetrieve(label)
+                for lbl in labels:
+                    requestResultsUpdated = self.downloadRetrieve(lbl)
                     downloadUpdate = requestResultsUpdated['available'] + requestResultsUpdated['requested']
-                    download_scenes(downloadUpdate, downloadMeta)
+                    download_scenes(downloadUpdate, downloadMeta, download_dir=download_dir)
                     downloadIds += downloadMeta
+
                 while len(downloadIds) < requestedDownloadsCount:
                     preparingDownloads = requestedDownloadsCount - len(downloadIds)
-                    logging.info('M2M.retrieveScenes - {} downloads are not available. Waiting 10 seconds...'.format(preparingDownloads))
+                    logging.info(f'M2M.retrieveScenes - {preparingDownloads} downloads are not available. Waiting 10 seconds...')
                     time.sleep(10)
-                    for label in labels:
-                        requestResultsUpdated = self.downloadRetrieve(label)
+                    for lbl in labels:
+                        requestResultsUpdated = self.downloadRetrieve(lbl)
                         downloadUpdate = requestResultsUpdated['available']
-                        download_scenes(downloadUpdate, downloadMeta)
+                        download_scenes(downloadUpdate, downloadMeta, download_dir=download_dir)
                         downloadIds += downloadUpdate
             else:
-                download_scenes(requestResults['availableDownloads'], downloadMeta)
+                download_scenes(requestResults['availableDownloads'], downloadMeta, download_dir=download_dir)
         else:
             logging.info('M2M.retrieveScenes - No download options found')
-        for label in labels:
-            self.downloadOrderRemove(label)
-            self.sceneListRemove(label)
+
+        for lbl in labels:
+            self.downloadOrderRemove(lbl)
+            self.sceneListRemove(lbl)
+
         return downloadMeta
 
     def logout(self):
-        r = self.sendRequest('logout')
-        if r != None:
+        if self.sendRequest('logout') is not None:
             raise M2MError("Not able to logout")
         self.apiKey = None
 
-    def __exit__(self):
+    def __exit__(self, exc_type, exc_value, traceback):
         self.logout()
 
 def retry_connect(url, json_data, headers={}, max_retries=5, sleep_seconds=2, timeout=600):
@@ -258,19 +230,14 @@ def retry_connect(url, json_data, headers={}, max_retries=5, sleep_seconds=2, ti
             return response
         except requests.exceptions.Timeout:
             retries += 1
-            logging.info('Connection Timeout - retry number {} of {}'.format(retries,max_retries))
-            sec = random.random() * sleep_seconds + 100.
-            time.sleep(sec)
+            logging.info(f'Connection Timeout - retry {retries} of {max_retries}')
+            time.sleep(random.random() * sleep_seconds + 1.0)
     raise M2MError("Maximum retries exceeded")
 
 def apply_filter(elements, key_filters):
     result = []
-    if elements != None:
+    if elements is not None:
         for element in elements:
-            get_elem = True
-            for key,filt in key_filters.items():
-                if not filt(element[key]):
-                    get_elem = False
-            if get_elem:
+            if all(filt(element[key]) for key, filt in key_filters.items()):
                 result.append(element)
     return result

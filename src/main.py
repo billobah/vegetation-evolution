@@ -1,41 +1,62 @@
-from utils import telechargement_scenes
-from utils import extraction_images
-from utils import chemin_images
-from utils import crop_straighten_images
-from utils import images_to_process
-from ndvi import compute_ndvi
-from ndvi import ndvi_storage
-from ndvi import analyze_ndvi  # à activer plus tard si besoin
+import os
+import logging
+import duckdb
 
+# Importer les modules du pipeline
+from utils.create_downloads_table import create_downloads_table
+from utils.crop_images import crop_and_store_images
+from utils.standardize_and_compute_ndvi import standardize_and_compute_ndvi
+
+# === Configuration du Logging ===
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    handlers=[logging.StreamHandler()]
+)
+
+# === Définition des chemins ===
+# Point de départ = src/
+BASE_DIR = os.path.dirname(__file__)
+DB_DIR = os.path.join(BASE_DIR, "bdd")       # ➔ src/bdd/
+DB_PATH = os.path.join(DB_DIR, "ndvi.duckdb") # ➔ src/bdd/ndvi.duckdb
+
+# === Fonction principale ===
 def run_pipeline():
-    print("=== Pipeline NDVI : Démarrage ===")
+    logging.info("=== Pipeline NDVI : Démarrage ===")
 
-    # 1. Téléchargement des scènes satellites (commenté si déjà fait)
-    # download_path = telechargement_scenes.main()
+    # 1. S'assurer que le dossier 'src/bdd' existe
+    os.makedirs(DB_DIR, exist_ok=True)
+    logging.info(f"Dossier de la base de données : {DB_DIR}")
 
-    # 2. Extraction des fichiers .TIF depuis les archives (commenté si déjà fait)
-    # extract_path = "../data/raw/extract"
-    # extraction_images.main(download_path, extract_path)
+    # 2. Supprimer l'ancienne base si elle existe AVANT connexion
+    if os.path.exists(DB_PATH):
+        logging.warning(f"Ancienne base détectée : suppression {DB_PATH}")
+        os.remove(DB_PATH)
 
-    # 3. Indexation des images extraites dans la BDD
-    # chemin_images.main(extract_path)
+    # 3. Ouvrir une nouvelle connexion propre
+    con = duckdb.connect(DB_PATH)
+    logging.info(f"Connexion ouverte à la base : {DB_PATH}")
 
-    # 4. Détection des scènes à traiter (B3/B4 présents mais NDVI manquant)
-    scenes = images_to_process.main()
+    try:
+        # 4. Pipeline d'exécution
+        logging.info("Étape 1 : Création de la table downloads...")
+        create_downloads_table(con)
 
-    # 5. Crop central dynamique des B3/B4 → fichiers dans ../data/cropped
-    cropped_scenes = crop_straighten_images.main(crop_ratio=0.5)
+        logging.info("Étape 2 : Crop et enregistrement des images...")
+        crop_and_store_images(con)
 
-    # 6. Calcul des NDVI → fichiers GeoTIFF dans ../data/ndvi
-    ndvi_series = compute_ndvi.main(cropped_scenes)
+        logging.info("Étape 3 : Calcul et standardisation du NDVI...")
+        standardize_and_compute_ndvi(con)
 
-    # 7. Sauvegarde des NDVI (.npy + .png) et enregistrement dans DuckDB
-    ndvi_storage.main(ndvi_series)
+    except Exception as e:
+        logging.exception(f"Erreur critique pendant l'exécution du pipeline : {e}")
 
-    # 8. Analyse NDVI (moyenne, % pixels verts, etc.) — à activer plus tard
-    # analyze_ndvi.main(ndvi_series)
+    finally:
+        con.close()
+        logging.info("Connexion à la base fermée.")
 
-    print("=== Pipeline NDVI : Terminé ===")
+    logging.info("=== Pipeline NDVI : Terminé avec succès ===")
 
+# === Point d'entrée ===
 if __name__ == "__main__":
     run_pipeline()
