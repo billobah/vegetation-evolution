@@ -1,0 +1,54 @@
+version: 2
+
+sources:
+  - name: raw
+    schema: main
+    tables:
+      - name: standardized_ndvi
+        description: "Table brute DuckDB avec NDVI vectorisé par image"
+        columns:
+          - name: scene_id
+            tests: [not_null, unique]
+          - name: ndvi_array
+            tests: [not_null]
+          - name: width
+            tests: [not_null]
+          - name: height
+            tests: [not_null]
+
+models:
+  - name: raw_ndvi_scenes
+    description: "Expose standardized_ndvi comme modèle DBT source"
+    columns:
+      - name: scene_id
+        tests: [not_null]
+      - name: ndvi_array
+        tests: [not_null]
+      - name: width
+        tests: [not_null]
+      - name: height
+        tests: [not_null]
+
+  - name: int_ndvi_scenes
+    description: "Ajoute la colonne acquisition_date extraite du scene_id"
+    columns:
+      - name: scene_id
+        tests: [not_null]
+      - name: acquisition_date
+        description: "Date d’acquisition de la scène"
+        tests: [not_null]
+
+  - name: int_ndvi_scenes_unnest
+    description: "Transforme chaque image NDVI en une ligne par pixel via UNNEST"
+    columns:
+      - name: scene_id
+        tests: [not_null]
+      - name: pixel_index
+        description: "Index du pixel dans l’image"
+        tests: [not_null]
+      - name: ndvi_value
+        description: "Valeur NDVI du pixel"
+        tests: [not_null]
+      - name: acquisition_date
+        description: "Date extraite du nom de scène"
+        tests: [not_null]
