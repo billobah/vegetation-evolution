@@ -1,3 +1,5 @@
+dbt-core==1.9.4
+dbt-duckdb==1.9.2
 duckdb==1.2.1
 fpdf==1.7.2
 google-api-core==2.24.1
