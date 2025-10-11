@@ -28,7 +28,7 @@ L'objectif est de :
 
 ### 3. Installer les dépendances
 
-```bash
+```python
 pip install -r requirements.txt
 ```
 
@@ -42,7 +42,7 @@ Ce projet utilise la bibliothèque **m2m-api** (disponible sur [GitHub](https://
 
 Une fois l'accès validé, renseigne tes identifiants ou ton token dans le fichier `config.json`.
 
-```bash
+```python
 python m2m_api/download_images.py
 ```
 
@@ -57,7 +57,7 @@ Ce script :
 
 Le script `image_utils/crop_straighten_images.py` réalise le **redressement géométrique** des images pour garantir leur alignement.
 
-```bash
+```python
 python utils/crop_straighten_images.py
 ```
 
@@ -74,7 +74,7 @@ Le script `ndvi/compute_ndvi.py` calcule le **NDVI** à partir des bandes spectr
 
 NDVI = (B4 - B3)/(B4 + B3)
 
-```bash
+```python
 python ndvi/compute_ndvi.py
 ```
 
