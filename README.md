@@ -43,7 +43,7 @@ Ce projet utilise la bibliothèque **m2m-api** (disponible sur [GitHub](https://
 Une fois l'accès validé, renseigne tes identifiants ou ton token dans le fichier `config.json`.
 
 ```python
-python m2m_api/download_images.py
+m2m_api/download_images.py
 ```
 
 Ce script :
@@ -58,7 +58,7 @@ Ce script :
 Le script `image_utils/crop_straighten_images.py` réalise le **redressement géométrique** des images pour garantir leur alignement.
 
 ```python
-python utils/crop_straighten_images.py
+utils/crop_straighten_images.py
 ```
 
 Ce script :
@@ -89,7 +89,7 @@ Ce script :
 
 Le script `ndvi/analyze_ndvi.py` permet d'analyser l'évolution du NDVI au fil du temps afin d'observer les tendances de la végétation.
 
-```bash
+```python
 python ndvi/analyze_ndvi.py
 ```
 
